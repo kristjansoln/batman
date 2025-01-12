@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# This is a script that manages battery conservation
+# mode on Lenovo Ideapad 3 laptops. See the following link
+# for more information.
+# https://www.reddit.com/r/Ubuntu/comments/p2so5n/how_to_limit_battery_charging_to_60_in_ubuntu/
+
+getModeInfo() {
+  val=$(cat /sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode)
+  if [ "$val" = "0" ]; then
+    echo "Current battery conservation mode: disabled"
+  elif [ "$val" = "1" ]; then
+    echo "Current battery conservation mode: enabled"
+  fi
+}
+
+enableConservation() {
+  echo "Enabling conservation mode"
+  echo 1 >/sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode
+}
+
+disableConservation() {
+  echo "Disabling conservation mode"
+  echo 0 >/sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode
+}
+
+toggleConservation() {
+  val=$(cat /sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode)
+  if [ "$val" = "0" ]; then
+    enableConservation
+  elif [ "$val" = "1" ]; then
+    disableConservation
+  fi
+}
+
+# If -h passed, print help and exit
+if [ "$1" = "-h" ]; then
+  echo "Battery conservation mode manager for Lenovo Ideapad 3"
+  echo ""
+  echo "Battery conservation mode limits the charging to 60%."
+  echo "This script must be run as sudo."
+  echo ""
+  echo "Usage:"
+  echo " p or no arguments - print current mode"
+  echo " e - enable conservation"
+  echo " d - disable conservation"
+  echo " t - toggle conservation mode"
+  exit 1
+fi
+
+# If no argument passed, print out current state
+if [ $# -eq 0 ] || [ "$1" = "-p" ]; then
+  getModeInfo
+  exit 0
+fi
+
+# Exit if not sudo
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must be run as root."
+  exit 1
+fi
+
+# Modify current mode
+if [ "$1" = "-e" ]; then
+  enableConservation
+elif [ "$1" = "-d" ]; then
+  disableConservation
+elif [ "$1" = "-t" ]; then
+  toggleConservation
+else
+  echo "Invalid argument: $1"
+  exit 1
+fi
+
+exit 0
